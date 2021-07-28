@@ -13,6 +13,7 @@ import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
 import io.quarkus.registry.catalog.json.JsonExtension;
 import io.quarkus.registry.catalog.json.JsonExtensionCatalog;
+import io.quarkus.registry.config.json.RegistriesConfigMapperHelper;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -29,7 +30,7 @@ public class MetadataExtractor {
 
     public static Extension extractExtension(String repository, String groupId, String artifactId, String version) throws IOException {
         byte[] bytes = readExtension(repository, groupId, artifactId, version);
-        return JsonCatalogMapperHelper.deserialize(new ByteArrayInputStream(bytes), JsonExtension.class);
+        return RegistriesConfigMapperHelper.yamlMapper().readValue(new ByteArrayInputStream(bytes), JsonExtension.class);
     }
 
     private static byte[] readCatalog(String repository, String groupId, String artifactId, String version, String classifier) throws IOException {

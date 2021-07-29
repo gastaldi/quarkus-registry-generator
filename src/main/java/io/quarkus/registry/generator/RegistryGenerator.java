@@ -128,8 +128,8 @@ public class RegistryGenerator {
                 if (stream == null) {
                     stream = new JsonPlatformStream();
                     stream.setId(streamId);
-                    jsonPlatform.addStream(stream);
                 }
+                jsonPlatform.addStream(stream);
                 JsonPlatformRelease release = new JsonPlatformRelease();
                 release.setQuarkusCoreVersion(catalog.getQuarkusCoreVersion());
                 release.setUpstreamQuarkusCoreVersion(catalog.getUpstreamQuarkusCoreVersion());

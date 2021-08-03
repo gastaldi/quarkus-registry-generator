@@ -19,7 +19,7 @@ public class MetadataGenerator {
 
     private static final List<String> EMPTY_CLASSIFIER = Collections.singletonList("");
 
-    public static String generateMetadata(ArtifactCoords artifact, Collection<String> quarkusVersions) {
+    public static Metadata generateMetadata(ArtifactCoords artifact, Collection<String> quarkusVersions) {
         Metadata newMetadata = new Metadata();
         newMetadata.setGroupId(artifact.getGroupId());
         newMetadata.setArtifactId(artifact.getArtifactId());
@@ -38,7 +38,7 @@ public class MetadataGenerator {
         addSnapshotVersion(versioning, snapshot, baseVersion, "pom", EMPTY_CLASSIFIER);
         addSnapshotVersion(versioning, snapshot, baseVersion, "json", EMPTY_CLASSIFIER);
         addSnapshotVersion(versioning, snapshot, baseVersion, "json", quarkusVersions);
-        return writeMetadata(newMetadata);
+        return newMetadata;
     }
 
     private static void addSnapshotVersion(Versioning versioning, Snapshot snapshot, final String baseVersion,
@@ -54,7 +54,7 @@ public class MetadataGenerator {
         }
     }
 
-    private static String writeMetadata(Metadata metadata) {
+    public static String toString(Metadata metadata) {
         StringWriter sw = new StringWriter();
         try {
             METADATA_WRITER.write(sw, metadata);

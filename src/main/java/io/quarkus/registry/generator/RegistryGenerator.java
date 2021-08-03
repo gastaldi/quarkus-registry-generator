@@ -3,6 +3,7 @@ package io.quarkus.registry.generator;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -26,8 +27,11 @@ import io.quarkus.registry.catalog.json.JsonPlatformStream;
 import io.quarkus.registry.config.RegistriesConfigLocator;
 import io.quarkus.registry.config.json.RegistriesConfigMapperHelper;
 import io.quarkus.registry.generator.internal.MetadataGenerator;
+import org.apache.maven.artifact.repository.metadata.Metadata;
 
 import static io.quarkus.registry.generator.HashUtil.sha1;
+import static io.quarkus.registry.generator.internal.MetadataGenerator.generateMetadata;
+import static java.nio.file.Files.copy;
 import static java.nio.file.Files.createDirectories;
 import static java.nio.file.Files.writeString;
 import static java.util.stream.Collectors.toList;
@@ -43,6 +47,7 @@ public class RegistryGenerator {
 
     private final List<Extension> extensionList = new ArrayList<>();
 
+    private static final String SHA1_EXTENSION = ".sha1";
 
     public RegistryGenerator(Path outputDir) {
         this.outputDir = outputDir;
@@ -76,26 +81,57 @@ public class RegistryGenerator {
         return this;
     }
 
+    /**
+     * Perform the generation on the given data
+     *
+     * @return the {@link Path} of the output directory
+     * @throws IOException if some IO error occurs
+     */
     public Path generate() throws IOException {
-        generateConfigMetadata();
-        generatePlatformsMetadata();
-        generateNonPlatformExtensionsMetadata();
+        generateConfig();
+        generatePlatforms();
+        generateNonPlatformExtensions();
         return outputDir;
     }
 
     /**
-     * Just overwrite everything, contents should be the same
+     * Just overwrite everything, contents should be the same. Must produce the following files:
+     *
+     * io/quarkus/registry/quarkus-registry-descriptor/1.0-SNAPSHOT/maven-metadata.xml
+     * io/quarkus/registry/quarkus-registry-descriptor/1.0-SNAPSHOT/maven-metadata.xml.sha1
+     * io/quarkus/registry/quarkus-registry-descriptor/1.0-SNAPSHOT/quarkus-registry-descriptor-1.0-20210803.135921-1.json
+     * io/quarkus/registry/quarkus-registry-descriptor/1.0-SNAPSHOT/quarkus-registry-descriptor-1.0-20210803.135921-1.json.sha1
+     *
+     * @throws IOException if some IO exception occurs
      */
-    private void generateConfigMetadata() throws IOException {
+    private void generateConfig() throws IOException {
         var descriptorDir = createDirectories(outputDir.resolve("io/quarkus/registry/quarkus-registry-descriptor/1.0-SNAPSHOT"));
         var contents = RegistriesConfigMapperHelper.jsonMapper().writeValueAsString(RegistriesConfigLocator.getDefaultRegistry());
 
-        writeString(descriptorDir.resolve("quarkus-registry-descriptor-1.0-SNAPSHOT.json"), contents);
-        writeString(descriptorDir.resolve("quarkus-registry-descriptor-1.0-SNAPSHOT.json.sha1"), sha1(contents));
+        // Generate metadata
+        Metadata metadata = generateMetadata(new ArtifactCoords("io.quarkus.registry", "quarkus-registry-descriptor", "1.0-SNAPSHOT"), Collections.emptyList());
+        var metadataString = MetadataGenerator.toString(metadata);
+        writeString(descriptorDir.resolve("maven-metadata.xml"), metadataString);
+        writeString(descriptorDir.resolve("maven-metadata.xml.sha1"), sha1(metadataString));
+
+        String timestampedJsonFile = String.format("quarkus-registry-descriptor-%s-1.0-SNAPSHOT.json", metadata.getVersioning().getSnapshotVersions().get(0).getVersion());
+        writeString(descriptorDir.resolve(timestampedJsonFile), contents);
+        writeString(descriptorDir.resolve(timestampedJsonFile + SHA1_EXTENSION), sha1(contents));
     }
 
-    private void generatePlatformsMetadata() throws IOException {
+    /**
+     * Must produce the following files:
+     *
+     * io/quarkus/registry/quarkus-platforms/1.0-SNAPSHOT/maven-metadata.xml
+     * io/quarkus/registry/quarkus-platforms/1.0-SNAPSHOT/maven-metadata.xml.sha1
+     * io/quarkus/registry/quarkus-platforms/1.0-SNAPSHOT/quarkus-platforms-1.0-20210803.135923-1.json
+     * io/quarkus/registry/quarkus-platforms/1.0-SNAPSHOT/quarkus-platforms-1.0-20210803.135923-1.json.sha1
+     *
+     * @throws IOException if some IO exception occurs
+     */
+    private void generatePlatforms() throws IOException {
         var descriptorDir = createDirectories(outputDir.resolve("io/quarkus/registry/quarkus-platforms/1.0-SNAPSHOT"));
+
         Path platformPath = descriptorDir.resolve("quarkus-platforms-1.0-SNAPSHOT.json");
         JsonPlatformCatalog platformCatalog;
         if (Files.exists(platformPath)) {
@@ -118,7 +154,6 @@ public class RegistryGenerator {
             if (platform != null) {
                 jsonPlatform.setName(platform.getName());
             }
-            jsonPlatform.setName(platform.getName());
             for (ExtensionCatalog catalog : catalogs) {
                 Map<String, Object> platformReleaseMetadata = (Map<String, Object>) catalog.getMetadata().get("platform-release");
                 String streamId = (String) platformReleaseMetadata.get("stream");
@@ -140,9 +175,6 @@ public class RegistryGenerator {
             platformCatalog.addPlatform(jsonPlatform);
         });
 
-        var contents = JsonCatalogMapperHelper.mapper().writeValueAsString(platformCatalog);
-        writeString(descriptorDir.resolve("quarkus-platforms-1.0-SNAPSHOT.json"), contents);
-        writeString(descriptorDir.resolve("quarkus-platforms-1.0-SNAPSHOT.json.sha1"), sha1(contents));
 
         // Generate maven-metadata.xml
         Set<String> quarkusVersions = platformCatalog.getPlatforms().stream()
@@ -151,36 +183,67 @@ public class RegistryGenerator {
                 .map(PlatformRelease::getQuarkusCoreVersion)
                 .collect(Collectors.toSet());
 
-        String metadata = MetadataGenerator.generateMetadata(new ArtifactCoords("io.quarkus.registry", "quarkus-platforms", "1.0-SNAPSHOT"), quarkusVersions);
-        writeString(descriptorDir.resolve("maven-metadata.xml"), metadata);
-        writeString(descriptorDir.resolve("maven-metadata.xml.sha1"), sha1(metadata));
+        Metadata metadata = generateMetadata(new ArtifactCoords("io.quarkus.registry", "quarkus-platforms", "1.0-SNAPSHOT"), quarkusVersions);
+        var metadataString = MetadataGenerator.toString(metadata);
+        writeString(descriptorDir.resolve("maven-metadata.xml"), metadataString);
+        writeString(descriptorDir.resolve("maven-metadata.xml.sha1"), sha1(metadataString));
+
+        var timestampedJsonFile = String.format("quarkus-platforms-%s-1.0-SNAPSHOT.json", metadata.getVersioning().getSnapshotVersions().get(0).getVersion());
+        var contents = JsonCatalogMapperHelper.mapper().writeValueAsString(platformCatalog);
+        writeString(descriptorDir.resolve(timestampedJsonFile), contents);
+        writeString(descriptorDir.resolve(timestampedJsonFile + SHA1_EXTENSION), sha1(contents));
+        copy(descriptorDir.resolve(timestampedJsonFile), descriptorDir.resolve("quarkus-platforms-1.0-SNAPSHOT.json"), StandardCopyOption.REPLACE_EXISTING);
+        copy(descriptorDir.resolve(timestampedJsonFile + SHA1_EXTENSION), descriptorDir.resolve("quarkus-platforms-1.0-SNAPSHOT.json" + SHA1_EXTENSION), StandardCopyOption.REPLACE_EXISTING);
     }
 
-    private void generateNonPlatformExtensionsMetadata() throws IOException {
+    /**
+     * Must produce the following files:
+     *
+     * io/quarkus/registry/quarkus-non-platform-extensions/1.0-SNAPSHOT/maven-metadata.xml
+     * io/quarkus/registry/quarkus-non-platform-extensions/1.0-SNAPSHOT/maven-metadata.xml.sha1
+     * io/quarkus/registry/quarkus-non-platform-extensions/1.0-SNAPSHOT/quarkus-non-platform-extensions-1.0-20210803.135924-1-2.1.0.Final.json
+     * io/quarkus/registry/quarkus-non-platform-extensions/1.0-SNAPSHOT/quarkus-non-platform-extensions-1.0-20210803.135924-1-2.1.0.Final.json.sha1
+     * io/quarkus/registry/quarkus-non-platform-extensions/1.0-SNAPSHOT/quarkus-non-platform-extensions-1.0-20210803.135924-1-2.0.3.Final.json
+     * io/quarkus/registry/quarkus-non-platform-extensions/1.0-SNAPSHOT/quarkus-non-platform-extensions-1.0-20210803.135924-1-2.0.3.Final.json.sha1
+     *
+     * @throws IOException
+     */
+    private void generateNonPlatformExtensions() throws IOException {
         var descriptorDir = createDirectories(outputDir.resolve("io/quarkus/registry/quarkus-non-platform-extensions/1.0-SNAPSHOT"));
         // Generate metadata
-        String metadata = MetadataGenerator.generateMetadata(new ArtifactCoords("io.quarkus.registry", "quarkus-non-platform-extensions", "1.0-SNAPSHOT"), Collections.emptyList());
-        writeString(descriptorDir.resolve("maven-metadata.xml"), metadata);
-        writeString(descriptorDir.resolve("maven-metadata.xml.sha1"), sha1(metadata));
+        Metadata metadata = generateMetadata(new ArtifactCoords("io.quarkus.registry",
+                                                                "quarkus-non-platform-extensions",
+                                                                "1.0-SNAPSHOT"), Collections.emptyList());
+        String metadataString = MetadataGenerator.toString(metadata);
+        writeString(descriptorDir.resolve("maven-metadata.xml"), metadataString);
+        writeString(descriptorDir.resolve("maven-metadata.xml.sha1"), sha1(metadataString));
 
         List<String> quarkusVersions = getQuarkusVersions();
         // Generate a JSON per Quarkus version
-        for (Extension extension : extensionList) {
-            for (String quarkusVersion : quarkusVersions) {
+        for (String quarkusVersion : quarkusVersions) {
+            for (Extension extension : extensionList) {
                 JsonExtensionCatalog jsonExtensionCatalog;
                 Path nonPlatformPath = descriptorDir.resolve(String.format("quarkus-non-platform-extensions-1.0-SNAPSHOT-%s.json", quarkusVersion));
                 if (Files.exists(nonPlatformPath)) {
                     jsonExtensionCatalog = JsonCatalogMapperHelper.deserialize(nonPlatformPath, JsonExtensionCatalog.class);
                 } else {
                     jsonExtensionCatalog = new JsonExtensionCatalog();
-                    jsonExtensionCatalog.setId(new ArtifactCoords("io.quarkus.registry", "quarkus-non-platform-extensions", quarkusVersion, "json", "1.0-SNAPSHOT").toString());
-                    jsonExtensionCatalog.setBom(ArtifactCoords.pom("io.quarkus.platform", "quarkus-bom", quarkusVersion));
+                    jsonExtensionCatalog.setId(new ArtifactCoords("io.quarkus.registry",
+                                                                  "quarkus-non-platform-extensions",
+                                                                  quarkusVersion,
+                                                                  "json",
+                                                                  "1.0-SNAPSHOT").toString());
+                    jsonExtensionCatalog.setBom(ArtifactCoords.pom(
+                            "io.quarkus.platform",
+                            "quarkus-bom",
+                            quarkusVersion));
                 }
                 // Should we order each extension?
                 jsonExtensionCatalog.addExtension(extension);
                 var contents = JsonCatalogMapperHelper.mapper().writeValueAsString(jsonExtensionCatalog);
-                writeString(nonPlatformPath, contents);
-                writeString(descriptorDir.resolve(nonPlatformPath.getFileName() + ".sha1"), sha1(contents));
+                var timestampedJsonFile = String.format("quarkus-non-platform-extensions-%s-%s.json", metadata.getVersioning().getSnapshotVersions().get(0).getVersion(), quarkusVersion);
+                writeString(descriptorDir.resolve(timestampedJsonFile), contents);
+                writeString(descriptorDir.resolve(timestampedJsonFile + SHA1_EXTENSION), sha1(contents));
             }
         }
 

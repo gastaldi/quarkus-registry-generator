@@ -35,6 +35,8 @@ class RegistryGeneratorTest {
         String version = getMetadataVersion(registryDescriptorRoot.resolve("maven-metadata.xml"));
         assertThat(registryDescriptorRoot.resolve(String.format("quarkus-registry-descriptor-%s-1.0-SNAPSHOT.json", version))).exists();
         assertThat(registryDescriptorRoot.resolve(String.format("quarkus-registry-descriptor-%s-1.0-SNAPSHOT.json.sha1", version))).exists();
+        assertThat(registryDescriptorRoot.resolve("quarkus-registry-descriptor-1.0-SNAPSHOT.json")).exists();
+        assertThat(registryDescriptorRoot.resolve("quarkus-registry-descriptor-1.0-SNAPSHOT.json.sha1")).exists();
     }
 
     @Test

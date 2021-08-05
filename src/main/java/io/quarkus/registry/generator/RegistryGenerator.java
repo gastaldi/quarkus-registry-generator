@@ -2,10 +2,10 @@ package io.quarkus.registry.generator;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -20,7 +20,6 @@ import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.PlatformRelease;
-import io.quarkus.registry.catalog.PlatformStream;
 import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
 import io.quarkus.registry.catalog.json.JsonExtensionCatalog;
 import io.quarkus.registry.catalog.json.JsonPlatform;
@@ -128,6 +127,10 @@ public class RegistryGenerator implements Closeable {
         String timestampedJsonFile = String.format("quarkus-registry-descriptor-%s-1.0-SNAPSHOT.json", metadata.getVersioning().getSnapshotVersions().get(0).getVersion());
         writeString(descriptorDir.resolve(timestampedJsonFile), contents);
         writeString(descriptorDir.resolve(timestampedJsonFile + SHA1_EXTENSION), sha1(contents));
+
+        copy(descriptorDir.resolve(timestampedJsonFile), descriptorDir.resolve("quarkus-registry-descriptor-1.0-SNAPSHOT.json"), StandardCopyOption.REPLACE_EXISTING);
+        copy(descriptorDir.resolve(timestampedJsonFile + SHA1_EXTENSION), descriptorDir.resolve("quarkus-registry-descriptor-1.0-SNAPSHOT.json" + SHA1_EXTENSION), StandardCopyOption.REPLACE_EXISTING);
+
     }
 
     /**
@@ -213,10 +216,6 @@ public class RegistryGenerator implements Closeable {
         copy(descriptorDir.resolve(timestampedJsonFile + SHA1_EXTENSION), descriptorDir.resolve("quarkus-platforms-1.0-SNAPSHOT.json" + SHA1_EXTENSION), StandardCopyOption.REPLACE_EXISTING);
     }
 
-    private Map<PlatformStream, List<PlatformRelease>> mergeStreams(List<PlatformStream> streams) {
-        return null;
-    }
-
     /**
      * Must produce the following files:
      *
@@ -241,7 +240,7 @@ public class RegistryGenerator implements Closeable {
         writeString(descriptorDir.resolve("maven-metadata.xml"), metadataString);
         writeString(descriptorDir.resolve("maven-metadata.xml.sha1"), sha1(metadataString));
 
-        List<String> quarkusVersions = getQuarkusVersions();
+        Collection<String> quarkusVersions = getQuarkusVersions();
         // Generate a JSON per Quarkus version
         for (String quarkusVersion : quarkusVersions) {
             JsonExtensionCatalog jsonExtensionCatalog = new JsonExtensionCatalog();
@@ -259,17 +258,11 @@ public class RegistryGenerator implements Closeable {
         }
     }
 
-    private List<String> getQuarkusVersions() throws IOException {
-        List<String> versions = new ArrayList<>();
-        Path platformPath = outputDir.resolve("io/quarkus/registry/quarkus-platforms/1.0-SNAPSHOT/quarkus-platforms-1.0-SNAPSHOT.json");
-        if (Files.exists(platformPath)) {
-            JsonPlatformCatalog platformCatalog = JsonCatalogMapperHelper.deserialize(platformPath, JsonPlatformCatalog.class);
-            platformCatalog.getPlatforms().stream()
-                    .flatMap(p -> p.getStreams().stream())
-                    .flatMap(s -> s.getReleases().stream())
-                    .map(PlatformRelease::getQuarkusCoreVersion)
-                    .forEach(versions::add);
-        }
-        return versions;
+    private Collection<String> getQuarkusVersions() {
+        return catalogMap.values().stream()
+                .flatMap(Collection::stream)
+                .map(ExtensionCatalog::getQuarkusCoreVersion)
+                .sorted(Version.QUALIFIER_REVERSED_COMPARATOR)
+                .collect(Collectors.toList());
     }
 }

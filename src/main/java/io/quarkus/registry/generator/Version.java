@@ -5,7 +5,7 @@ import java.util.Objects;
 
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 
-public class Version {
+class Version {
 
     /**
      * Order versions based on the qualifier. Final > CR1

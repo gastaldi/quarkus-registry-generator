@@ -29,11 +29,10 @@ import io.quarkus.registry.catalog.json.JsonPlatformReleaseVersion;
 import io.quarkus.registry.catalog.json.JsonPlatformStream;
 import io.quarkus.registry.config.RegistriesConfigLocator;
 import io.quarkus.registry.config.json.RegistriesConfigMapperHelper;
-import io.quarkus.registry.generator.internal.MetadataGenerator;
 import org.apache.maven.artifact.repository.metadata.Metadata;
 
 import static io.quarkus.registry.generator.HashUtil.sha1;
-import static io.quarkus.registry.generator.internal.MetadataGenerator.generateMetadata;
+import static io.quarkus.registry.generator.MetadataGenerator.generateMetadata;
 import static java.nio.file.Files.copy;
 import static java.nio.file.Files.createDirectories;
 import static java.nio.file.Files.writeString;

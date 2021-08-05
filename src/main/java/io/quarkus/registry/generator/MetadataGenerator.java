@@ -1,4 +1,4 @@
-package io.quarkus.registry.generator.internal;
+package io.quarkus.registry.generator;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -14,7 +14,7 @@ import org.apache.maven.artifact.repository.metadata.SnapshotVersion;
 import org.apache.maven.artifact.repository.metadata.Versioning;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Writer;
 
-public class MetadataGenerator {
+class MetadataGenerator {
 
     private static final MetadataXpp3Writer METADATA_WRITER = new MetadataXpp3Writer();
 

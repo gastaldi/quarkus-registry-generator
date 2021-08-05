@@ -7,7 +7,7 @@ import java.security.NoSuchAlgorithmException;
 
 import org.apache.commons.codec.binary.Hex;
 
-public class HashUtil {
+class HashUtil {
 
     public static String sha1(String content) throws IOException {
         return checksum(content, sha1Digest());

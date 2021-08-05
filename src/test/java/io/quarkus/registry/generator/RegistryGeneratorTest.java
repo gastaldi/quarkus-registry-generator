@@ -80,6 +80,8 @@ class RegistryGeneratorTest {
         String version = getMetadataVersion(nonPlatformExtensionsRoot.resolve("maven-metadata.xml"));
         assertThat(nonPlatformExtensionsRoot.resolve(String.format("quarkus-non-platform-extensions-%s-2.0.3.Final.json", version))).exists();
         assertThat(nonPlatformExtensionsRoot.resolve(String.format("quarkus-non-platform-extensions-%s-2.0.3.Final.json.sha1", version))).exists();
+        assertThat(nonPlatformExtensionsRoot.resolve("quarkus-non-platform-extensions-1.0-SNAPSHOT-2.0.3.Final.json")).exists();
+        assertThat(nonPlatformExtensionsRoot.resolve("quarkus-non-platform-extensions-1.0-SNAPSHOT-2.0.3.Final.json.sha1")).exists();
     }
 
     @Test

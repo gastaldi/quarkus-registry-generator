@@ -255,6 +255,9 @@ public class RegistryGenerator implements Closeable {
             var timestampedJsonFile = String.format("quarkus-non-platform-extensions-%s-%s.json", metadata.getVersioning().getSnapshotVersions().get(0).getVersion(), quarkusVersion);
             writeString(descriptorDir.resolve(timestampedJsonFile), contents);
             writeString(descriptorDir.resolve(timestampedJsonFile + SHA1_EXTENSION), sha1(contents));
+            copy(descriptorDir.resolve(timestampedJsonFile), descriptorDir.resolve(String.format("quarkus-non-platform-extensions-1.0-SNAPSHOT-%s.json", quarkusVersion)), StandardCopyOption.REPLACE_EXISTING);
+            copy(descriptorDir.resolve(timestampedJsonFile + SHA1_EXTENSION), descriptorDir.resolve(String.format("quarkus-non-platform-extensions-1.0-SNAPSHOT-%s.json" + SHA1_EXTENSION, quarkusVersion)), StandardCopyOption.REPLACE_EXISTING);
+
         }
     }
 

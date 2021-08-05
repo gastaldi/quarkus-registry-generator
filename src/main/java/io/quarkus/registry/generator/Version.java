@@ -10,15 +10,7 @@ public class Version {
     /**
      * Order versions based on the qualifier. Final > CR1
      */
-    public static final Comparator<String> QUALIFIER_REVERSED_COMPARATOR = ((o1, o2) -> {
-        String o1Qualifier = new DefaultArtifactVersion(o1).getQualifier();
-        String o2Qualifier = new DefaultArtifactVersion(o2).getQualifier();
-        if (o1Qualifier == null || o2Qualifier == null) {
-            return 0;
-        } else {
-            return o2Qualifier.compareTo(o1Qualifier);
-        }
-    });
+    public static final Comparator<String> QUALIFIER_REVERSED_COMPARATOR = (Comparator.comparing(DefaultArtifactVersion::new).reversed());
 
     /**
      * Converts a version to an appropriate stream key

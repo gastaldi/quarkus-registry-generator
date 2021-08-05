@@ -171,20 +171,20 @@ public class RegistryGenerator implements Closeable {
                 release.setVersion(JsonPlatformReleaseVersion.fromString(version));
                 release.setMemberBoms(memberBoms.stream().map(ArtifactCoords::fromString).collect(toList()));
 
-                // Order all releases
-                List<PlatformRelease> sortedReleases = new ArrayList<>();
-                sortedReleases.add(release);
-                sortedReleases.addAll(stream.getReleases());
-                sortedReleases.sort(compareRelease);
-                if (sortedReleases.size() > 1) {
+                if (stream.getReleases().isEmpty()) {
+                    stream.addRelease(release);
+                } else {
                     // Recreate JsonPlatformStream
                     // Hack because JsonPlatformStream.setReleases is broken
+                    // Order all releases
+                    List<PlatformRelease> sortedReleases = new ArrayList<>();
+                    sortedReleases.add(release);
+                    sortedReleases.addAll(stream.getReleases());
+                    sortedReleases.sort(compareRelease);
                     JsonPlatformStream newStream = new JsonPlatformStream();
                     newStream.setId(streamId);
-                    newStream.setReleases(sortedReleases);
+                    newStream.addRelease(sortedReleases.get(0));
                     streams.put(streamId, newStream);
-                } else {
-                    stream.addRelease(release);
                 }
             }
             jsonPlatform.setStreams(List.copyOf(streams.values()));

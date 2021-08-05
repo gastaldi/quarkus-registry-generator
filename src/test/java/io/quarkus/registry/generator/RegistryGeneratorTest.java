@@ -55,8 +55,8 @@ class RegistryGeneratorTest {
         assertThat(platformDescriptorRoot.resolve("maven-metadata.xml.sha1")).exists();
 
         String version = getMetadataVersion(platformDescriptorRoot.resolve("maven-metadata.xml"));
-        assertThat(platformDescriptorRoot.resolve(String.format("quarkus-platforms-%s-1.0-SNAPSHOT.json", version))).exists();
-        assertThat(platformDescriptorRoot.resolve(String.format("quarkus-platforms-%s-1.0-SNAPSHOT.json.sha1", version))).exists();
+        assertThat(platformDescriptorRoot.resolve(String.format("quarkus-platforms-%s.json", version))).exists();
+        assertThat(platformDescriptorRoot.resolve(String.format("quarkus-platforms-%s.json.sha1", version))).exists();
     }
 
     @Test

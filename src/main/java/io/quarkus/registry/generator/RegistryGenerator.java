@@ -124,7 +124,7 @@ public class RegistryGenerator implements Closeable {
         writeString(descriptorDir.resolve("maven-metadata.xml"), metadataString);
         writeString(descriptorDir.resolve("maven-metadata.xml.sha1"), sha1(metadataString));
 
-        String timestampedJsonFile = String.format("quarkus-registry-descriptor-%s-1.0-SNAPSHOT.json", metadata.getVersioning().getSnapshotVersions().get(0).getVersion());
+        String timestampedJsonFile = String.format("quarkus-registry-descriptor-%s.json", metadata.getVersioning().getSnapshotVersions().get(0).getVersion());
         writeString(descriptorDir.resolve(timestampedJsonFile), contents);
         writeString(descriptorDir.resolve(timestampedJsonFile + SHA1_EXTENSION), sha1(contents));
 

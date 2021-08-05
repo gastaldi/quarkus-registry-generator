@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 import io.quarkus.maven.ArtifactCoords;
@@ -19,7 +20,18 @@ public class MetadataGenerator {
 
     private static final List<String> EMPTY_CLASSIFIER = Collections.singletonList("");
 
-    public static Metadata generateMetadata(ArtifactCoords artifact, Collection<String> quarkusVersions) {
+    public static Metadata generateMetadataSnapshot(String groupId, String artifactId, Date lastUpdatedTimestamp) {
+        Metadata newMetadata = new Metadata();
+        newMetadata.setGroupId(groupId);
+        newMetadata.setArtifactId(artifactId);
+        Versioning versioning = new Versioning();
+        newMetadata.setVersioning(versioning);
+        versioning.addVersion("1.0-SNAPSHOT");
+        versioning.setLastUpdatedTimestamp(lastUpdatedTimestamp);
+        return newMetadata;
+    }
+
+    public static Metadata generateMetadata(ArtifactCoords artifact, Date lastUpdatedTimestamp, Collection<String> quarkusVersions) {
         Metadata newMetadata = new Metadata();
         newMetadata.setGroupId(artifact.getGroupId());
         newMetadata.setArtifactId(artifact.getArtifactId());
@@ -27,7 +39,7 @@ public class MetadataGenerator {
         Versioning versioning = new Versioning();
         newMetadata.setVersioning(versioning);
 
-        versioning.updateTimestamp();
+        versioning.setLastUpdatedTimestamp(lastUpdatedTimestamp);
 
         Snapshot snapshot = new Snapshot();
         versioning.setSnapshot(snapshot);

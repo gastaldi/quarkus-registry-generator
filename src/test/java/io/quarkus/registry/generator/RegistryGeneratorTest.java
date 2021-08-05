@@ -6,6 +6,12 @@ import java.nio.file.Path;
 
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.catalog.PlatformRelease;
+import io.quarkus.registry.catalog.PlatformStream;
+import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
+import io.quarkus.registry.catalog.json.JsonPlatformCatalog;
+import io.quarkus.registry.catalog.json.JsonPlatformRelease;
+import io.quarkus.registry.catalog.json.JsonPlatformReleaseVersion;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.junit.jupiter.api.Test;
@@ -75,7 +81,7 @@ class RegistryGeneratorTest {
     }
 
     @Test
-    void should_generate_platform_descriptor_and_maven_metadata_incremental(@TempDir Path tempDir) throws Exception {
+    void should_order_platform_streams_and_releases(@TempDir Path tempDir) throws Exception {
         Path path = new RegistryGenerator(tempDir)
                 .add(extractExtensionCatalog(MetadataExtractor.MAVEN_CENTRAL,
                                              "io.quarkus.platform",
@@ -83,9 +89,6 @@ class RegistryGeneratorTest {
                                              "2.0.2.Final",
                                              "2.0.2.Final"))
                 .add(extractExtension(MetadataExtractor.MAVEN_CENTRAL, "io.quarkiverse.prettytime", "quarkus-prettytime", "0.1.0"))
-                .generate();
-        // Perform incremental change
-        path = new RegistryGenerator(path)
                 .add(extractExtensionCatalog(MetadataExtractor.MAVEN_CENTRAL,
                                              "io.quarkus.platform",
                                              "quarkus-bom-quarkus-platform-descriptor",
@@ -96,9 +99,22 @@ class RegistryGeneratorTest {
                                              "quarkus-bom-quarkus-platform-descriptor",
                                              "2.1.0.CR1",
                                              "2.1.0.CR1"))
-                .add(extractExtension(MetadataExtractor.MAVEN_CENTRAL, "io.quarkiverse.prettytime", "quarkus-prettytime", "0.1.0"))
+                .add(extractExtensionCatalog(MetadataExtractor.MAVEN_CENTRAL,
+                                             "io.quarkus.platform",
+                                             "quarkus-bom-quarkus-platform-descriptor",
+                                             "2.1.1.Final",
+                                             "2.1.1.Final"))
                 .generate();
-//        fail("Missing assertions");
+        Path platformDescriptorRoot = path.resolve("io/quarkus/registry/quarkus-platforms/1.0-SNAPSHOT");
+        JsonPlatformCatalog platformCatalog = JsonCatalogMapperHelper.deserialize(platformDescriptorRoot.resolve("quarkus-platforms-1.0-SNAPSHOT.json"), JsonPlatformCatalog.class);
+        assertThat(platformCatalog.getPlatforms()).hasSize(1);
+        assertThat(platformCatalog.getRecommendedPlatform().getStreams())
+                .extracting(PlatformStream::getId)
+                .containsExactly("2.1", "2.0");
+        assertThat(platformCatalog.getRecommendedPlatform().getStream("2.1").getRecommendedRelease())
+                .extracting(PlatformRelease::getVersion).isEqualTo(JsonPlatformReleaseVersion.fromString("2.1.1.Final"));
+        assertThat(platformCatalog.getRecommendedPlatform().getStream("2.0").getRecommendedRelease())
+                .extracting(PlatformRelease::getVersion).isEqualTo(JsonPlatformReleaseVersion.fromString("2.0.3.Final"));
     }
 
 

@@ -55,6 +55,7 @@ class RegistryGeneratorTest {
         assertThat(registryConfig.getNonPlatformExtensions()).isNull();
         assertThat(registryConfig.getQuarkusVersions().getRecognizedVersionsExpression()).isEqualTo("1.0.0");
         assertThat(registryConfig.getQuarkusVersions().isExclusiveProvider()).isTrue();
+        assertThat(registryConfig.getMaven().getRepository().getId()).isEqualTo("foo.bar");
         assertThat(registryConfig.getMaven().getRepository().getUrl()).isEqualTo("https://bar.foo.com");
     }
 

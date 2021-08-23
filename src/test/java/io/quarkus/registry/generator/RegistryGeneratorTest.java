@@ -24,6 +24,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RegistryGeneratorTest {
 
     @Test
+    void should_use_custom_group_id(@TempDir Path tempDir) throws Exception {
+        Path path = new RegistryGenerator(tempDir)
+                .withGroupId("lorem.ipsum.dolor")
+                .generate();
+        Path registryDescriptorRoot = path.resolve("lorem/ipsum/dolor/quarkus-registry-descriptor/1.0-SNAPSHOT/");
+        assertThat(registryDescriptorRoot).exists();
+        assertThat(registryDescriptorRoot.resolve("maven-metadata.xml")).exists();
+        assertThat(registryDescriptorRoot.resolve("maven-metadata.xml.sha1")).exists();
+
+        String version = getMetadataVersion(registryDescriptorRoot.resolve("maven-metadata.xml"));
+        assertThat(registryDescriptorRoot.resolve(String.format("quarkus-registry-descriptor-%s.json", version))).exists();
+        assertThat(registryDescriptorRoot.resolve(String.format("quarkus-registry-descriptor-%s.json.sha1", version))).exists();
+        assertThat(registryDescriptorRoot.resolve("quarkus-registry-descriptor-1.0-SNAPSHOT.json")).exists();
+        assertThat(registryDescriptorRoot.resolve("quarkus-registry-descriptor-1.0-SNAPSHOT.json.sha1")).exists();
+    }
+
+    @Test
     void should_generate_config_descriptor(@TempDir Path tempDir) throws Exception {
         Path path = new RegistryGenerator(tempDir).generate();
 

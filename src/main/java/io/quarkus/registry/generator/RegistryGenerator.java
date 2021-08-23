@@ -17,6 +17,7 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.registry.Constants;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.PlatformRelease;
@@ -50,6 +51,8 @@ public class RegistryGenerator implements Closeable {
     private final List<Extension> extensionList = new ArrayList<>();
 
     private static final String SHA1_EXTENSION = ".sha1";
+
+    private String groupId = Constants.DEFAULT_REGISTRY_GROUP_ID;
 
     private final Date now = new Date();
 
@@ -86,6 +89,17 @@ public class RegistryGenerator implements Closeable {
     }
 
     /**
+     * Use this group ID for all generated metadata.
+     *
+     * @param groupId the group ID to be used
+     * @return this instance, for method chaining purposes
+     */
+    public RegistryGenerator withGroupId(String groupId) {
+        this.groupId = groupId;
+        return this;
+    }
+
+    /**
      * Perform the generation on the given data
      *
      * @return the {@link Path} of the output directory
@@ -114,11 +128,11 @@ public class RegistryGenerator implements Closeable {
      * @throws IOException if some IO exception occurs
      */
     private void generateConfig() throws IOException {
-        var descriptorDir = createDirectories(outputDir.resolve("io/quarkus/registry/quarkus-registry-descriptor/1.0-SNAPSHOT"));
+        var descriptorDir = createDirectories(outputDir.resolve(groupId.replace('.','/') + "/quarkus-registry-descriptor/1.0-SNAPSHOT"));
         var contents = RegistriesConfigMapperHelper.jsonMapper().writeValueAsString(RegistriesConfigLocator.getDefaultRegistry());
 
         // Generate metadata
-        Metadata metadata = generateMetadata(new ArtifactCoords("io.quarkus.registry", "quarkus-registry-descriptor", "1.0-SNAPSHOT"), now, Collections.emptyList());
+        Metadata metadata = generateMetadata(new ArtifactCoords(groupId, "quarkus-registry-descriptor", "1.0-SNAPSHOT"), now, Collections.emptyList());
         var metadataString = MetadataGenerator.toString(metadata);
         writeString(descriptorDir.resolve("maven-metadata.xml"), metadataString);
         writeString(descriptorDir.resolve("maven-metadata.xml.sha1"), sha1(metadataString));
@@ -143,7 +157,7 @@ public class RegistryGenerator implements Closeable {
      * @throws IOException if some IO exception occurs
      */
     private void generatePlatforms() throws IOException {
-        var descriptorDir = createDirectories(outputDir.resolve("io/quarkus/registry/quarkus-platforms/1.0-SNAPSHOT"));
+        var descriptorDir = createDirectories(outputDir.resolve(groupId.replace('.','/') +"/quarkus-platforms/1.0-SNAPSHOT"));
 
         final JsonPlatformCatalog platformCatalog = new JsonPlatformCatalog();
 
@@ -201,7 +215,7 @@ public class RegistryGenerator implements Closeable {
                 .map(PlatformRelease::getQuarkusCoreVersion)
                 .collect(Collectors.toSet());
 
-        Metadata metadata = generateMetadata(new ArtifactCoords("io.quarkus.registry", "quarkus-platforms", "1.0-SNAPSHOT"), now, quarkusVersions);
+        Metadata metadata = generateMetadata(new ArtifactCoords(groupId, "quarkus-platforms", "1.0-SNAPSHOT"), now, quarkusVersions);
         var metadataString = MetadataGenerator.toString(metadata);
         writeString(descriptorDir.resolve("maven-metadata.xml"), metadataString);
         writeString(descriptorDir.resolve("maven-metadata.xml.sha1"), sha1(metadataString));
@@ -228,9 +242,9 @@ public class RegistryGenerator implements Closeable {
      * @throws IOException
      */
     private void generateNonPlatformExtensions() throws IOException {
-        var descriptorDir = createDirectories(outputDir.resolve("io/quarkus/registry/quarkus-non-platform-extensions/1.0-SNAPSHOT"));
+        var descriptorDir = createDirectories(outputDir.resolve(groupId.replace('.','/') +"/quarkus-non-platform-extensions/1.0-SNAPSHOT"));
         // Generate metadata
-        Metadata metadata = generateMetadata(new ArtifactCoords("io.quarkus.registry",
+        Metadata metadata = generateMetadata(new ArtifactCoords(groupId,
                                                                 "quarkus-non-platform-extensions",
                                                                 "1.0-SNAPSHOT"),
                                              now,
@@ -243,7 +257,7 @@ public class RegistryGenerator implements Closeable {
         // Generate a JSON per Quarkus version
         for (String quarkusVersion : quarkusVersions) {
             JsonExtensionCatalog jsonExtensionCatalog = new JsonExtensionCatalog();
-            jsonExtensionCatalog.setId(new ArtifactCoords("io.quarkus.registry",
+            jsonExtensionCatalog.setId(new ArtifactCoords(groupId,
                                                           "quarkus-non-platform-extensions",
                                                           quarkusVersion,
                                                           "json",

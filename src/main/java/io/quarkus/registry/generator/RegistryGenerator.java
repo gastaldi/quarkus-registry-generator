@@ -21,6 +21,7 @@ import io.quarkus.registry.Constants;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.PlatformRelease;
+import io.quarkus.registry.catalog.PlatformStream;
 import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
 import io.quarkus.registry.catalog.json.JsonExtensionCatalog;
 import io.quarkus.registry.catalog.json.JsonPlatform;
@@ -247,7 +248,7 @@ public class RegistryGenerator implements Closeable {
         final JsonPlatformCatalog platformCatalog = new JsonPlatformCatalog();
 
         // Sort by release (Final > CR) and then by stream id
-        Comparator<PlatformRelease> compareRelease = ((o1, o2) -> Version.QUALIFIER_REVERSED_COMPARATOR
+        Comparator<PlatformRelease> compareRelease = ((o1, o2) -> Version.VERSION_COMPARATOR
                 .compare(o1.getVersion().toString(), o2.getVersion().toString()));
 
         catalogMap.forEach((platformKey, catalogs) -> {
@@ -276,20 +277,18 @@ public class RegistryGenerator implements Closeable {
                 if (stream.getReleases().isEmpty()) {
                     stream.addRelease(release);
                 } else {
-                    // Recreate JsonPlatformStream
-                    // Hack because JsonPlatformStream.setReleases is broken
                     // Order all releases
                     List<PlatformRelease> sortedReleases = new ArrayList<>();
                     sortedReleases.add(release);
                     sortedReleases.addAll(stream.getReleases());
                     sortedReleases.sort(compareRelease);
-                    JsonPlatformStream newStream = new JsonPlatformStream();
-                    newStream.setId(streamId);
-                    newStream.addRelease(sortedReleases.get(0));
-                    streams.put(streamId, newStream);
+                    stream.setReleases(List.of(sortedReleases.get(0)));
                 }
             }
-            jsonPlatform.setStreams(List.copyOf(streams.values()));
+            List<PlatformStream> orderedStreams = new ArrayList<>(streams.values());
+            orderedStreams.sort((p1, p2) -> Version.QUALIFIER_REVERSED_COMPARATOR.compare(
+                    p1.getRecommendedRelease().getVersion().toString(), p2.getRecommendedRelease().getVersion().toString()));
+            jsonPlatform.setStreams(orderedStreams);
             platformCatalog.addPlatform(jsonPlatform);
         });
 

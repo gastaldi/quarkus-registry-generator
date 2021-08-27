@@ -142,8 +142,8 @@ class RegistryGeneratorTest {
                 .add(extractExtensionCatalog(MetadataExtractor.MAVEN_CENTRAL,
                         "io.quarkus.platform",
                         "quarkus-bom-quarkus-platform-descriptor",
-                        "2.1.0.CR1",
-                        "2.1.0.CR1"))
+                        "2.2.0.CR1",
+                        "2.2.0.CR1"))
                 .add(extractExtensionCatalog(MetadataExtractor.MAVEN_CENTRAL,
                         "io.quarkus.platform",
                         "quarkus-bom-quarkus-platform-descriptor",
@@ -156,11 +156,13 @@ class RegistryGeneratorTest {
         assertThat(platformCatalog.getPlatforms()).hasSize(1);
         assertThat(platformCatalog.getRecommendedPlatform().getStreams())
                 .extracting(PlatformStream::getId)
-                .containsExactly("2.1", "2.0");
+                .containsExactly("2.1", "2.0", "2.2");
         assertThat(platformCatalog.getRecommendedPlatform().getStream("2.1").getRecommendedRelease())
                 .extracting(PlatformRelease::getVersion).isEqualTo(JsonPlatformReleaseVersion.fromString("2.1.1.Final"));
         assertThat(platformCatalog.getRecommendedPlatform().getStream("2.0").getRecommendedRelease())
                 .extracting(PlatformRelease::getVersion).isEqualTo(JsonPlatformReleaseVersion.fromString("2.0.3.Final"));
+        assertThat(platformCatalog.getRecommendedPlatform().getStream("2.2").getRecommendedRelease())
+                .extracting(PlatformRelease::getVersion).isEqualTo(JsonPlatformReleaseVersion.fromString("2.2.0.CR1"));
     }
 
     private String getMetadataVersion(Path metadataPath) throws IOException, XmlPullParserException {

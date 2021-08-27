@@ -38,6 +38,7 @@ import io.quarkus.registry.config.json.JsonRegistryPlatformsConfig;
 import io.quarkus.registry.config.json.JsonRegistryQuarkusVersionsConfig;
 import io.quarkus.registry.config.json.RegistriesConfigMapperHelper;
 import org.apache.maven.artifact.repository.metadata.Metadata;
+import org.sonatype.nexus.repository.metadata.model.RepositoryMetadata;
 
 import static io.quarkus.registry.generator.HashUtil.sha1;
 import static io.quarkus.registry.generator.MetadataGenerator.generateMetadata;
@@ -149,6 +150,7 @@ public class RegistryGenerator implements Closeable {
      * @throws IOException if some IO error occurs
      */
     public Path generate() throws IOException {
+        generateRepositoryMetadata();
         generateConfig();
         generatePlatforms();
         generateNonPlatformExtensions();
@@ -158,6 +160,23 @@ public class RegistryGenerator implements Closeable {
     @Override
     public void close() throws IOException {
         generate();
+    }
+
+    private void generateRepositoryMetadata() throws IOException {
+        var descriptorDir = createDirectories(outputDir.resolve(".meta"));
+        // Create prefixes.txt
+        writeString(descriptorDir.resolve("prefixes.txt"), "## repository-prefixes/2.0" + System.lineSeparator()
+                + "/" + groupId.replace('.', '/'));
+        // Create repository-metadata.xml and repository-metadata.sha1
+        RepositoryMetadata repositoryMetadata = new RepositoryMetadata();
+        repositoryMetadata.setVersion(RepositoryMetadata.MODEL_VERSION);
+        repositoryMetadata.setId(registryId);
+        repositoryMetadata.setUrl(registryUrl);
+        repositoryMetadata.setLayout(RepositoryMetadata.LAYOUT_MAVEN2);
+        repositoryMetadata.setPolicy(RepositoryMetadata.POLICY_SNAPSHOT);
+        var metadataString = MetadataGenerator.toString(repositoryMetadata);
+        writeString(descriptorDir.resolve("repository-metadata.xml"), metadataString);
+        writeString(descriptorDir.resolve("repository-metadata.xml.sha1"), sha1(metadataString));
     }
 
     /**

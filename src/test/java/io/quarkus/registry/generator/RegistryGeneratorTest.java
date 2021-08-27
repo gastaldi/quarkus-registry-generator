@@ -11,7 +11,6 @@ import io.quarkus.registry.catalog.PlatformStream;
 import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
 import io.quarkus.registry.catalog.json.JsonPlatformCatalog;
 import io.quarkus.registry.catalog.json.JsonPlatformReleaseVersion;
-import io.quarkus.registry.config.RegistriesConfig;
 import io.quarkus.registry.config.RegistryConfig;
 import io.quarkus.registry.config.json.JsonRegistryConfig;
 import io.quarkus.registry.config.json.RegistriesConfigMapperHelper;
@@ -163,6 +162,14 @@ class RegistryGeneratorTest {
                 .extracting(PlatformRelease::getVersion).isEqualTo(JsonPlatformReleaseVersion.fromString("2.0.3.Final"));
         assertThat(platformCatalog.getRecommendedPlatform().getStream("2.2").getRecommendedRelease())
                 .extracting(PlatformRelease::getVersion).isEqualTo(JsonPlatformReleaseVersion.fromString("2.2.0.CR1"));
+    }
+
+    @Test
+    void should_generate_nexus_metadata(@TempDir Path tempDir) throws Exception {
+        Path path = new RegistryGenerator(tempDir).generate();
+        assertThat(path.resolve(".meta/prefixes.txt")).exists();
+        assertThat(path.resolve(".meta/repository-metadata.xml")).exists();
+        assertThat(path.resolve(".meta/repository-metadata.xml.sha1")).exists();
     }
 
     private String getMetadataVersion(Path metadataPath) throws IOException, XmlPullParserException {

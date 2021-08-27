@@ -13,6 +13,8 @@ import org.apache.maven.artifact.repository.metadata.Snapshot;
 import org.apache.maven.artifact.repository.metadata.SnapshotVersion;
 import org.apache.maven.artifact.repository.metadata.Versioning;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Writer;
+import org.sonatype.nexus.repository.metadata.model.RepositoryMetadata;
+import org.sonatype.nexus.repository.metadata.model.io.xpp3.RepositoryMetadataXpp3Writer;
 
 class MetadataGenerator {
 
@@ -31,7 +33,8 @@ class MetadataGenerator {
         return newMetadata;
     }
 
-    public static Metadata generateMetadata(ArtifactCoords artifact, Date lastUpdatedTimestamp, Collection<String> quarkusVersions) {
+    public static Metadata generateMetadata(ArtifactCoords artifact, Date lastUpdatedTimestamp,
+            Collection<String> quarkusVersions) {
         Metadata newMetadata = new Metadata();
         newMetadata.setGroupId(artifact.getGroupId());
         newMetadata.setArtifactId(artifact.getArtifactId());
@@ -54,7 +57,7 @@ class MetadataGenerator {
     }
 
     private static void addSnapshotVersion(Versioning versioning, Snapshot snapshot, final String baseVersion,
-                                           String extension, Collection<String> classifiers) {
+            String extension, Collection<String> classifiers) {
         final String version = baseVersion + snapshot.getTimestamp() + "-" + snapshot.getBuildNumber();
         for (String classifier : classifiers) {
             final SnapshotVersion sv = new SnapshotVersion();
@@ -75,4 +78,15 @@ class MetadataGenerator {
         }
         return sw.toString();
     }
+
+    public static String toString(RepositoryMetadata metadata) {
+        StringWriter sw = new StringWriter();
+        try {
+            new RepositoryMetadataXpp3Writer().write(sw, metadata);
+        } catch (IOException e) {
+            // Should never happen
+        }
+        return sw.toString();
+    }
+
 }

@@ -121,6 +121,10 @@ class RegistryGeneratorTest {
         assertThat(nonPlatformExtensionsRoot.resolve("quarkus-non-platform-extensions-1.0-SNAPSHOT-2.0.3.Final.json")).exists();
         assertThat(nonPlatformExtensionsRoot.resolve(
                 "quarkus-non-platform-extensions-1.0-SNAPSHOT-2.0.3.Final.json.sha1")).exists();
+        assertThat(nonPlatformExtensionsRoot.resolve(
+                "quarkus-non-platform-extensions-1.0-SNAPSHOT.json")).exists();
+        assertThat(nonPlatformExtensionsRoot.resolve(
+                "quarkus-non-platform-extensions-1.0-SNAPSHOT.json.sha1")).exists();
     }
 
     @Test
